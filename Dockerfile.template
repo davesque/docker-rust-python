@@ -1,0 +1,44 @@
+FROM buildpack-deps:%%VARIANT%%
+
+# Rust setup
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH \
+    RUST_VERSION=%%RUST-VERSION%%
+
+RUN set -eux; \
+    %%ARCH-CASE%%; \
+    url="https://static.rust-lang.org/rustup/archive/%%RUSTUP-VERSION%%/${rustArch}/rustup-init"; \
+    wget "$url"; \
+    echo "${rustupSha256} *rustup-init" | sha256sum -c -; \
+    chmod +x rustup-init; \
+    ./rustup-init -y --no-modify-path --default-toolchain $RUST_VERSION; \
+    rm rustup-init; \
+    chmod -R a+w $RUSTUP_HOME $CARGO_HOME; \
+    rustup --version; \
+    cargo --version; \
+    rustc --version;
+
+# Setup deadsnakes ppa for multiple python versions
+RUN deadsnakes_list="/etc/apt/sources.list.d/deadsnakes.list"; \
+    printf 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu %%VARIANT%% main\n' >> $deadsnakes_list \
+    && printf 'deb-src http://ppa.launchpad.net/deadsnakes/ppa/ubuntu %%VARIANT%% main\n' >> $deadsnakes_list \
+    && gpg --keyserver keyserver.ubuntu.com --recv-keys 6A755776 \
+    && gpg --export 6A755776 | apt-key add - \
+    && apt-get update
+
+ARG PYTHON_VERSION=%%PYTHON-VERSION%%
+
+# Install python
+RUN apt-get install -y \
+        python$PYTHON_VERSION-dev \
+        python$PYTHON_VERSION-venv
+
+# Create virtualenv and activate by default
+RUN python$PYTHON_VERSION -mvenv /venv
+ENV VIRTUAL_ENV=/venv
+ENV PATH=/venv/bin:$PATH
+
+RUN pip install --upgrade pip setuptools wheel
+
+CMD ["/bin/bash"]

@@ -1,7 +1,6 @@
-from buildpack-deps:xenial
+FROM buildpack-deps:xenial
 
-# Rust set up code borrowed from official docker-rust repo:
-# https://github.com/rust-lang/docker-rust/blob/d55d56e152da6cffe980baee408cd18716df4b44/1.37.0/buster/Dockerfile
+# Rust setup
 ENV RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
     PATH=/usr/local/cargo/bin:$PATH \
@@ -35,7 +34,7 @@ RUN deadsnakes_list="/etc/apt/sources.list.d/deadsnakes.list"; \
     && gpg --export 6A755776 | apt-key add - \
     && apt-get update
 
-ARG PYTHON_VERSION
+ARG PYTHON_VERSION=3.7
 
 # Install python
 RUN apt-get install -y \
